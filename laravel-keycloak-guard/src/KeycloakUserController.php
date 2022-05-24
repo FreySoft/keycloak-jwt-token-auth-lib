@@ -82,21 +82,19 @@ class KeycloakUserController
     {
         $added_to_keycloak = false;
 
-        // Keycloak admin client <- API access
-        $this->keycloakAdminController = new KeycloakAdminController();
-        $keycloakClient = Keycloak\Admin\KeycloakClient::factory($this->keycloakAdminController->getParams());
-        $this->keycloakAdminController->setClient($keycloakClient);
-
         // create with User model
         try {
-            if ( isset($this->keycloakAdminController) and is_object($this->keycloakAdminController) ) {
-                if ( $this->keycloakAdminController->register( $this->prepareUserData($user) ) )
-                {
-                    // app log User
-                    AppLog::add('user', $user->id, 'keycloak');
+            // Keycloak admin client <- API access
+            $this->keycloakAdminController = new KeycloakAdminController();
+            $keycloakClient = Keycloak\Admin\KeycloakClient::factory($this->keycloakAdminController->getParams());
+            $this->keycloakAdminController->setClient($keycloakClient);
 
-                    return true;
-                }
+            if ( $this->keycloakAdminController->register( $this->prepareUserData($user) ) )
+            {
+                // app log User
+                AppLog::add('user', $user->id, 'keycloak');
+
+                return true;
             }
         }
         // something went wrong while
