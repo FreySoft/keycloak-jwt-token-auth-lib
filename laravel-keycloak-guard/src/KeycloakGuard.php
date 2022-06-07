@@ -30,27 +30,25 @@ class KeycloakGuard implements Guard
     $this->authenticate();
     }
 
+
     /**
     * Decode token, validate and authenticate user
     *
     * @return mixed
     */
-
     private function authenticate()
     {
-    try {
-      $this->decodedToken = Token::decode($this->request->bearerToken(), $this->config['realm_public_key']);
-    }
-    catch (\Exception $e) {
-      //throw new TokenException($e->getMessage());
-        return false;
-    }
+        try {
+          $this->decodedToken = Token::decode($this->request->bearerToken(), $this->config['realm_public_key']);
+        } catch (\Exception $e) {
+          throw new TokenException($e->getMessage());
+        }
 
-    if ($this->decodedToken) {
-      $this->validate([
-        $this->config['user_provider_credential'] => $this->decodedToken->{$this->config['token_principal_attribute']}
-      ]);
-    }
+        if ($this->decodedToken) {
+          $this->validate([
+            $this->config['user_provider_credential'] => $this->decodedToken->{$this->config['token_principal_attribute']}
+          ]);
+        }
     }
 
 
@@ -61,8 +59,9 @@ class KeycloakGuard implements Guard
     */
     public function check()
     {
-        return !is_null($this->user());
+    return !is_null($this->user());
     }
+
 
     /**
     * Determine if the guard has a user instance.
@@ -74,6 +73,7 @@ class KeycloakGuard implements Guard
     return !is_null($this->user());
     }
 
+
     /**
     * Determine if the current user is a guest.
     *
@@ -83,6 +83,7 @@ class KeycloakGuard implements Guard
     {
     return !$this->check();
     }
+
 
     /**
     * Get the currently authenticated user.
@@ -102,6 +103,7 @@ class KeycloakGuard implements Guard
     return $this->user;
     }
 
+
     /**
     * Get the ID for the currently authenticated user.
     *
@@ -114,6 +116,7 @@ class KeycloakGuard implements Guard
     }
     }
 
+
     /**
     * Validate a user's credentials.
     *
@@ -122,8 +125,8 @@ class KeycloakGuard implements Guard
     */
     public function validate(array $credentials = [])
     {
-        if ( ! $this->decodedToken ) {
-            return false;
+        if (!$this->decodedToken) {
+          return false;
         }
 
         // check in block-list after logout
@@ -131,41 +134,43 @@ class KeycloakGuard implements Guard
         // we block token by "jti" (uniq id of token) and check it,
         // all jti-s stored in memory with Redis
         if ( $this->isTokenBlocked() ) {
-          return false;
+            return false;
         }
 
         $this->validateResources();
 
-        if ( $this->config['load_user_from_database'] ) {
+        if ($this->config['load_user_from_database'])
+        {
+            $methodOnProvider = $this->config['user_provider_custom_retrieve_method'] ?? null;
 
-              $user = $this->provider->retrieveByCredentials($credentials);
+            if ($methodOnProvider) {
+                $user = $this->provider->{$methodOnProvider}($this->decodedToken, $credentials);
+            } else {
+                $user = $this->provider->retrieveByCredentials($credentials);
+            }
 
-              if (!$user)
-              {
-                  // dismiss Exception - add new User instead
-                  //
-                  //$message = "User not found. Credentials: " . json_encode($credentials);
-                  ////$message = json_encode( $this->decodedToken );
-                  //throw new UserNotFoundException($message);
+            if (!$user) {
+                // dismiss Exception - add new User instead
+                //
+                //        throw new UserNotFoundException("User not found. Credentials: " . json_encode($credentials));
+                // store info about User from jwt-token into App's DB
+                //
+                $class = $this->provider->getModel();
+                $user = new $class();
 
-                  // store info about User from jwt-token into App's DB
-                  //
-                  $class = $this->provider->getModel();
-                  $user = new $class();
+                $userController = new KeycloakUserController($this->decodedToken);
+                $user = $userController->createUser($user);
 
-                  $userController = new KeycloakUserController($this->decodedToken);
-                  $user = $userController->createUser($user);
-
-                  // add to Keycloak too
-                  // (!) KC added User itself while auth. process
-                  //
-                  //if ( ! $userController->createKeycloakUser($user) ) {
-                  //    $message = 'Error creating KC user record';
-                  //    throw new UserNotFoundException($message);
-                  //}
-
-              }
-        } else {
+                // add to Keycloak too
+                // (!) KC added User itself while auth. process
+                //
+                //if ( ! $userController->createKeycloakUser($user) ) {
+                //    $message = 'Error creating KC user record';
+                //    throw new UserNotFoundException($message);
+                //}
+            }
+        }
+        else {
           $class = $this->provider->getModel();
           $user = new $class();
         }
@@ -195,12 +200,12 @@ class KeycloakGuard implements Guard
     */
     private function validateResources()
     {
-        $token_resource_access = array_keys((array)($this->decodedToken->resource_access ?? []));
-        $allowed_resources = explode(',', $this->config['allowed_resources']);
+    $token_resource_access = array_keys((array)($this->decodedToken->resource_access ?? []));
+    $allowed_resources = explode(',', $this->config['allowed_resources']);
 
-        if (count(array_intersect($token_resource_access, $allowed_resources)) == 0) {
-          throw new ResourceAccessNotAllowedException("The decoded JWT token has not a valid `resource_access` allowed by API. Allowed resources by API: " . $this->config['allowed_resources']);
-        }
+    if (count(array_intersect($token_resource_access, $allowed_resources)) == 0) {
+      throw new ResourceAccessNotAllowedException("The decoded JWT token has not a valid `resource_access` allowed by API. Allowed resources by API: " . $this->config['allowed_resources']);
+    }
     }
 
 
@@ -211,7 +216,7 @@ class KeycloakGuard implements Guard
     */
     public function token()
     {
-        return json_encode($this->decodedToken);
+    return json_encode($this->decodedToken);
     }
 
 
@@ -223,16 +228,16 @@ class KeycloakGuard implements Guard
     */
     public function hasRole($resource, $role)
     {
-        $token_resource_access = (array)$this->decodedToken->resource_access;
-        if (array_key_exists($resource, $token_resource_access)) {
-          $token_resource_values = (array)$token_resource_access[$resource];
+    $token_resource_access = (array)$this->decodedToken->resource_access;
+    if (array_key_exists($resource, $token_resource_access)) {
+      $token_resource_values = (array)$token_resource_access[$resource];
 
-          if (array_key_exists('roles', $token_resource_values) &&
-            in_array($role, $token_resource_values['roles'])) {
-            return true;
-          }
-        }
-        return false;
+      if (array_key_exists('roles', $token_resource_values) &&
+        in_array($role, $token_resource_values['roles'])) {
+        return true;
+      }
+    }
+    return false;
     }
 
 
@@ -254,7 +259,7 @@ class KeycloakGuard implements Guard
         $expires = Redis::get('jwt-'.$token_uid);
 
         // is token still valid?
-        if ( isset($expires) and $expires < time() ) {
+        if ( (int)$expires and $expires < time() ) {
             return true;
         }
 
@@ -269,17 +274,18 @@ class KeycloakGuard implements Guard
      */
     public function blockToken()
     {
-        if ( ! $this->decodedToken) {
-            return false;
-        }
-
         // get uniq token ID
         $token_uid = $this->decodedToken->jti;
 
+        if ( ! strlen($token_uid)) {
+            return false;
+        }
+
         // store
-        Redis::set('jwt-'.$token_uid, (time() - 3600));
+        Redis::set('jwt-'.$token_uid, (time() - 3600*24));
 
         return true;
     }
+
 
 }
