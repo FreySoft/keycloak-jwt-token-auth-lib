@@ -200,12 +200,12 @@ class KeycloakGuard implements Guard
     */
     private function validateResources()
     {
-    $token_resource_access = array_keys((array)($this->decodedToken->resource_access ?? []));
-    $allowed_resources = explode(',', $this->config['allowed_resources']);
+        $token_resource_access = array_keys((array)($this->decodedToken->resource_access ?? []));
+        $allowed_resources = explode(',', $this->config['allowed_resources']);
 
-    if (count(array_intersect($token_resource_access, $allowed_resources)) == 0) {
-      throw new ResourceAccessNotAllowedException("The decoded JWT token has not a valid `resource_access` allowed by API. Allowed resources by API: " . $this->config['allowed_resources']);
-    }
+        if (count(array_intersect($token_resource_access, $allowed_resources)) == 0) {
+          throw new ResourceAccessNotAllowedException("The decoded JWT token has not a valid `resource_access` allowed by API. Allowed resources by API: " . $this->config['allowed_resources']);
+        }
     }
 
 
@@ -216,7 +216,7 @@ class KeycloakGuard implements Guard
     */
     public function token()
     {
-    return json_encode($this->decodedToken);
+        return json_encode($this->decodedToken);
     }
 
 
@@ -256,7 +256,7 @@ class KeycloakGuard implements Guard
         $token_uid = $this->decodedToken->jti;
 
         // get expires
-        $expires = Redis::get('jwt-'.$token_uid);
+        $expires = Redis::get( config('cache.stores.redis.prefix') . 'jwt.blocked.'.$token_uid);
 
         // is token still valid?
         if ( (int)$expires and $expires < time() ) {
@@ -282,7 +282,7 @@ class KeycloakGuard implements Guard
         }
 
         // store
-        Redis::set('jwt-'.$token_uid, (time() - 3600*24));
+        Redis::set( config('cache.stores.redis.prefix') . 'jwt.blocked.'.$token_uid, (time() - 3600*24));
 
         return true;
     }
