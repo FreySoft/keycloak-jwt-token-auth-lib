@@ -41,7 +41,8 @@ class KeycloakGuard implements Guard
         try {
           $this->decodedToken = Token::decode($this->request->bearerToken(), $this->config['realm_public_key']);
         } catch (\Exception $e) {
-          throw new TokenException($e->getMessage());
+          //throw new TokenException($e->getMessage());
+          return response()->json('Unauthenticated', 401);
         }
 
         if ($this->decodedToken) {
