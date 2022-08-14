@@ -5,6 +5,7 @@ namespace KeycloakGuard;
 use Illuminate\Contracts\Auth\Guard;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Auth\UserProvider;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use KeycloakGuard\Exceptions\TokenException;
 use KeycloakGuard\Exceptions\UserNotFoundException;
@@ -47,6 +48,12 @@ class KeycloakUserController
         // locales
         $user->locale = 'en';
         $user->locale_templates = 'en';
+
+        // check if councurency queries already saved a new User
+        // return before saving
+        if ( DB::table(AppConst::USERS_TABLE_NAME)->where('email', $user->email)->exists() ){
+            return $user;
+        }
 
         // pass
         $newPassword = substr($this->decodedToken->sid,0,6);
