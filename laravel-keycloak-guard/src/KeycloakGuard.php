@@ -153,9 +153,10 @@ class KeycloakGuard implements Guard
 
             if (!$user) {
                 // block register manually in AppConst
-                if (AppConst::AUTH_BLOCK_REGISTER) {
-                    return false;
-                }
+                // if
+                //if (AppConst::AUTH_BLOCK_REGISTER) {
+                //    return false;
+                //}
 
                 // dismiss Exception - add new User instead
                 //
