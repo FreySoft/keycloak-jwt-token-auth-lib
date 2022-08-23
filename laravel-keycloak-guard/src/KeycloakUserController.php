@@ -49,6 +49,10 @@ class KeycloakUserController
         $user->locale = 'en';
         $user->locale_templates = 'en';
 
+        // wait a little before check in -- 3 seconds
+        // cause couple of conq. requests can come in same time
+        sleep(3);
+
         // check if councurency queries already saved a new User
         // return before saving
         if ( DB::table(AppConst::USERS_TABLE_NAME)->where('email', $user->email)->exists() ){
