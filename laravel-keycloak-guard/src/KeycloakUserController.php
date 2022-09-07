@@ -68,7 +68,7 @@ class KeycloakUserController
             $user->save();
 
             // app log User
-            AppLog::add('user', $user->id, 'create');
+            AppLog::add('user', $user->id(), 'create');
         }
         // something went wrong while
         catch (\Exception $e) { // \Illuminate\Database\QueryException $e
