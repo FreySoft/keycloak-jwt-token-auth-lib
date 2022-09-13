@@ -1,15 +1,16 @@
 <?php
+
 namespace KeycloakGuard;
 
 use App\Common\AppConst;
 use Exception;
-use Illuminate\Contracts\Auth\Guard;
 use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Contracts\Auth\Guard;
 use Illuminate\Contracts\Auth\UserProvider;
 use Illuminate\Http\Request;
+use KeycloakGuard\Exceptions\ResourceAccessNotAllowedException;
 use KeycloakGuard\Exceptions\TokenException;
 use KeycloakGuard\Exceptions\UserNotFoundException;
-use KeycloakGuard\Exceptions\ResourceAccessNotAllowedException;
 use KeycloakGuard\KeycloakUserController;
 use Illuminate\Support\Facades\Redis;
 
@@ -19,6 +20,7 @@ class KeycloakGuard implements Guard
     private $user;
     private $provider;
     private $decodedToken;
+    private Request $request;
 
     public function __construct(UserProvider $provider, Request $request)
     {
@@ -40,7 +42,7 @@ class KeycloakGuard implements Guard
     private function authenticate()
     {
         try {
-            $this->decodedToken = Token::decode($this->request->bearerToken(), $this->config['realm_public_key']);
+            $this->decodedToken = Token::decode($this->getTokenForRequest(), $this->config['realm_public_key'], $this->config['leeway']);
         } catch (\Exception $e) {
             //throw new TokenException($e->getMessage());
             return response()->json('Unauthenticated', 401);
@@ -51,6 +53,19 @@ class KeycloakGuard implements Guard
                 $this->config['user_provider_credential'] => $this->decodedToken->{$this->config['token_principal_attribute']}
             ]);
         }
+    }
+
+
+    /**
+     * Get the token for the current request.
+     *
+     * @return string
+     */
+    public function getTokenForRequest()
+    {
+        $inputKey = $this->config['input_key'] ?? "";
+
+        return $this->request->bearerToken() ?? $this->request->input($inputKey);
     }
 
 
@@ -88,6 +103,18 @@ class KeycloakGuard implements Guard
 
 
     /**
+     * Set the current user.
+     *
+     * @param  \Illuminate\Contracts\Auth\Authenticatable  $user
+     * @return void
+     */
+    public function setUser(Authenticatable $user)
+    {
+        $this->user = $user;
+    }
+
+
+    /**
      * Get the currently authenticated user.
      *
      * @return \Illuminate\Contracts\Auth\Authenticatable|null
@@ -116,6 +143,17 @@ class KeycloakGuard implements Guard
         if ($user = $this->user()) {
             return $this->user()->id;
         }
+    }
+
+
+    /**
+     * Returns full decoded JWT token from athenticated user
+     *
+     * @return mixed|null
+     */
+    public function token()
+    {
+        return json_encode($this->decodedToken);
     }
 
 
@@ -190,18 +228,6 @@ class KeycloakGuard implements Guard
 
 
     /**
-     * Set the current user.
-     *
-     * @param  \Illuminate\Contracts\Auth\Authenticatable  $user
-     * @return void
-     */
-    public function setUser(Authenticatable $user)
-    {
-        $this->user = $user;
-    }
-
-
-    /**
      * Validate if authenticated user has a valid resource
      *
      * @return void
@@ -214,17 +240,6 @@ class KeycloakGuard implements Guard
         if (count(array_intersect($token_resource_access, $allowed_resources)) == 0) {
             throw new ResourceAccessNotAllowedException("The decoded JWT token has not a valid `resource_access` allowed by API. Allowed resources by API: " . $this->config['allowed_resources']);
         }
-    }
-
-
-    /**
-     * Returns full decoded JWT token from athenticated user
-     *
-     * @return mixed|null
-     */
-    public function token()
-    {
-        return json_encode($this->decodedToken);
     }
 
 
