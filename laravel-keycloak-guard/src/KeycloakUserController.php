@@ -50,10 +50,10 @@ class KeycloakUserController
         $user->locale_templates = 'en';
 
         // wait a little before check in -- 3 seconds
-        // cause couple of conq. requests can come in same time
+        // cause a couple of concurrency requests can come in same time
         sleep(3);
 
-        // check if councurency queries already saved a new User
+        // check if concurrency queries already saved a new User
         // return before saving
         if ( DB::table(AppConst::USERS_TABLE_NAME)->where('email', $user->email)->exists() ){
             return $user;
@@ -67,15 +67,19 @@ class KeycloakUserController
             // store
             $user->save();
 
+            //
+            $user_id = $user->id ?? (int)$user->id();
+
             // app log User
-            AppLog::add('user', (int)$user->id(), 'create');
+            AppLog::add('user', $user_id, 'create');
         }
         // something went wrong while
         catch (\Exception $e) { // \Illuminate\Database\QueryException $e
             Logger::error($e->getMessage(), $e->getTrace());
         }
 
-        // revert plain-text password (realtime once) for adding to Keycloak
+        // return plain-text password (realtime once) back
+        // for adding to Keycloak on next steps
         $user->password = $newPassword;
 
         return $user;
