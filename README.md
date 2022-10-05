@@ -8,6 +8,11 @@
 
 </p>
 
+# keycloak-jwt-token-auth-lib
+
+its a modified version of https://github.com/robsontenorio/laravel-keycloak-guard/
+destination: Laravel /vendor/robsontenorio/
+
 # Simple Keycloak Guard for Laravel / Lumen
 
 This package helps you authenticate users on a Laravel API based on JWT tokens generated from  **Keycloak Server**.
