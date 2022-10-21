@@ -203,6 +203,7 @@ class KeycloakGuard implements Guard
                 //
                 $class = $this->provider->getModel();
                 $user = new $class();
+                #$user = new \App\Models\User();
 
                 $userController = new KeycloakUserController($this->decodedToken);
                 $user = $userController->createUser($user);
@@ -219,6 +220,7 @@ class KeycloakGuard implements Guard
         else {
             $class = $this->provider->getModel();
             $user = new $class();
+            #$user = new \App\Models\User();
         }
 
         $this->setUser($user);

@@ -55,7 +55,7 @@ class KeycloakUserController
 
         // check if concurrency queries already saved a new User
         // return before saving
-        if ( DB::table(AppConst::USERS_TABLE_NAME)->where('email', $user->email)->exists() ){
+        if (DB::table(AppConst::USERS_TABLE_NAME)->where('email', $user->email)->exists()) {
             return $user;
         }
 
@@ -68,13 +68,13 @@ class KeycloakUserController
             $user->save();
 
             //
-            $user_id = (int)$user->id();
+            $user_id = (int)$user->getKey();
 
             // app log User
             AppLog::add('user', $user_id, 'create');
         }
         // something went wrong while
-        catch (\Exception $e) { // \Illuminate\Database\QueryException $e
+        catch (\Throwable $e) {
             Logger::error($e->getMessage(), $e->getTrace());
         }
 
