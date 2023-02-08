@@ -2,6 +2,7 @@
 
 namespace KeycloakGuard;
 
+use App\Models\User;
 use Illuminate\Contracts\Auth\Guard;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Contracts\Auth\UserProvider;
@@ -51,7 +52,7 @@ class KeycloakUserController
 
         // wait a little before check in -- 1-3 seconds
         // cause a couple of concurrency requests can come in same time
-        sleep(1);
+        sleep(2);
 
         // check if concurrency queries already saved a new User
         // return before saving
@@ -63,9 +64,18 @@ class KeycloakUserController
         $newPassword = substr($this->decodedToken->sid,0,6);
         $user->password = bcrypt($newPassword);
 
+        // create User if none
         try {
-            // store
-            $user->save();
+            $user = User::updateOrCreate(
+                [
+                    'email' => $user->email
+                ],
+                [
+                    'updated_at' => date('Y-m-d H:i:s'),
+                ]
+            );
+
+            //$user->save();
 
             //
             $user_id = (int)$user->getKey();
