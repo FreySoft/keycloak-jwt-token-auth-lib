@@ -43,8 +43,11 @@ class KeycloakUserController
         $user->email_verified_at = date('Y-m-d H:i:s');
 
         // name
-        $user->name = $this->decodedToken->given_name?:substr($this->decodedToken->name,0,strpos($this->decodedToken->name,' '));
-        $user->surname = $this->decodedToken->family_name?:substr($this->decodedToken->name,strpos($this->decodedToken->name,' ')+1);
+        $user->name = $this->decodedToken->given_name
+            ?:substr($this->decodedToken->name,0,strpos($this->decodedToken->name,' '));
+
+        $user->surname = $this->decodedToken->family_name
+            ?:substr($this->decodedToken->name,strpos($this->decodedToken->name,' ')+1);
 
         // locales
         $user->locale = 'en';
@@ -52,7 +55,7 @@ class KeycloakUserController
 
         // wait a little before check in -- 1-3 seconds
         // cause a couple of concurrency requests can come in same time
-        sleep(2);
+        //sleep(2);
 
         // check if concurrency queries already saved a new User
         // return before saving
