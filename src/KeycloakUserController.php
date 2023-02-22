@@ -42,12 +42,16 @@ class KeycloakUserController
         $user->email = $this->decodedToken->email;
         $user->email_verified_at = date('Y-m-d H:i:s');
 
+        $name = !empty($this->decodedToken->name)
+            ? $this->decodedToken->name
+            : str_replace('@', ' ', $this->decodedToken->email);
+
         // name
         $user->name = $this->decodedToken->given_name
-            ?:substr($this->decodedToken->name,0,strpos($this->decodedToken->name,' '));
+            ?:substr($name,0,strpos($name,' '));
 
         $user->surname = $this->decodedToken->family_name
-            ?:substr($this->decodedToken->name,strpos($this->decodedToken->name,' ')+1);
+            ?:substr($name,strpos($name,' ')+1);
 
         // locales
         $user->locale = 'en';
