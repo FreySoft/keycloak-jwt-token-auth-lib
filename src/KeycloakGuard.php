@@ -169,63 +169,17 @@ class KeycloakGuard implements Guard
             return false;
         }
 
-        // check in block-list after logout
-        // cause after logout from Keycloak current token will be validatable before expires (!) up to 1 hour or more
-        // we block token by "jti" (uniq id of token) and check it,
-        // all jti-s stored in memory with Redis
-        if ( $this->isTokenBlocked() ) {
+        if ($this->isTokenBlocked()) {
             return false;
         }
 
         $this->validateResources();
-
-        if ($this->config['load_user_from_database'])
-        {
-            $methodOnProvider = $this->config['user_provider_custom_retrieve_method'] ?? null;
-
-            if ($methodOnProvider) {
-                $user = $this->provider->{$methodOnProvider}($this->decodedToken, $credentials);
-            } else {
-                $user = $this->provider->retrieveByCredentials($credentials);
-            }
-
-            if (!$user) {
-                // block register manually in AppConst
-                // if
-                //if (AppConst::AUTH_BLOCK_REGISTER) {
-                //    return false;
-                //}
-
-                // dismiss Exception - add new User instead
-                //
-                //        throw new UserNotFoundException("User not found. Credentials: " . json_encode($credentials));
-                // store info about User from jwt-token into App's DB
-                //
-                $class = $this->provider->getModel();
-                $user = new $class();
-                #$user = new \App\Models\User();
-
-                $userController = new KeycloakUserController($this->decodedToken);
-                $user = $userController->createUser($user);
-
-                // add to Keycloak too
-                // (!) KC added User itself while auth. process
-                //
-                //if ( ! $userController->createKeycloakUser($user) ) {
-                //    $message = 'Error creating KC user record';
-                //    throw new UserNotFoundException($message);
-                //}
-            }
-        }
-        else {
-            $class = $this->provider->getModel();
-            $user = new $class();
-            #$user = new \App\Models\User();
+        if ($user = $this->provider->retrieveByCredentials($credentials)) {
+            $this->setUser($user);
+            return true;
         }
 
-        $this->setUser($user);
-
-        return true;
+        return false;
     }
 
 
