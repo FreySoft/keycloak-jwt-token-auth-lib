@@ -81,8 +81,7 @@ class KeycloakGuard implements Guard
 
         $this->validateResources();
         if (!$user = $this->provider->retrieveByCredentials($credentials)) {
-            $userController = new KeycloakUserController($this->decodedToken);
-            $user = $userController->createUser($this->provider->getModel());
+            return false;
         }
 
         $this->setUser($user);
