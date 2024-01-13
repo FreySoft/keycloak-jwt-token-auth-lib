@@ -100,17 +100,6 @@ class KeycloakGuard implements Guard
             return false;
         }
 
-        // get uniq token ID
-        $token_uid = $this->decodedToken->jti;
-
-        // get expires
-        $expires = Redis::get(config('cache.stores.redis.prefix') . 'jwt.blocked.' . $token_uid);
-
-        // is token still valid?
-        if ((int)$expires and $expires < time()) {
-            return true;
-        }
-
         return false;
     }
 
@@ -243,9 +232,6 @@ class KeycloakGuard implements Guard
         if (!strlen($token_uid)) {
             return false;
         }
-
-        // store
-        Redis::set(config('cache.stores.redis.prefix') . 'jwt.blocked.' . $token_uid, (time() - 3600 * 24));
 
         return true;
     }
