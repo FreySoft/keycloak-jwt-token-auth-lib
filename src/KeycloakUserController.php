@@ -2,7 +2,6 @@
 
 namespace KeycloakGuard;
 
-use App\Common\AppConst;
 use App\Http\Controllers\KeycloakAdminController;
 use App\Logger\Facades\AppLog;
 use App\Logger\Facades\Logger;
@@ -51,7 +50,7 @@ class KeycloakUserController
         $user['rainex_id'] = \Str::uuid();
 
         // create User if none
-        DB::table(AppConst::USERS_TABLE_NAME)->insert($user);
+        DB::table('users')->insert($user);
 
         return $class->where('email', $user['email'])->first();
     }
